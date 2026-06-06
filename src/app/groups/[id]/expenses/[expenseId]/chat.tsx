@@ -36,7 +36,7 @@ export function ExpenseChat({ expenseId, currentUserId, initialMessages }: { exp
           return [...prev.filter(m => !newIds.has(m.id)), ...newMessages];
         });
       }
-    }, 3000);
+    }, 10000); // 10-second polling to reduce Next.js dev server overhead
 
     return () => clearInterval(interval);
   }, [expenseId, messages]);
