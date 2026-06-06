@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AddExpenseForm } from "./add-expense-form"
@@ -12,8 +12,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) redirect('/login');
 
   const group = await prisma.group.findUnique({

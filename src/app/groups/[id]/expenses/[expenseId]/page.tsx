@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
+import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ExpenseChat } from "./chat"
 
 export default async function ExpensePage({ params }: { params: Promise<{ id: string, expenseId: string }> }) {
   const { id, expenseId } = await params;
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) redirect('/login');
 
   const expense = await prisma.expense.findUnique({

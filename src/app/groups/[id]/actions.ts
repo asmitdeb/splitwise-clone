@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
+import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
 export async function createExpense(groupId: string, data: {
@@ -11,8 +11,8 @@ export async function createExpense(groupId: string, data: {
   splitType: string,
   splits: Record<string, number>
 }) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
 
   const { description, totalAmount, payerId, splitType, splits } = data;
@@ -94,8 +94,8 @@ export async function createExpense(groupId: string, data: {
 }
 
 export async function createSettlement(groupId: string, data: { payerId: string, payeeId: string, amount: number }) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
 
   await prisma.settlement.create({

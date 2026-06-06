@@ -1,21 +1,8 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 
-export default function proxy(request: NextRequest) {
-  const userId = request.cookies.get('userId')?.value;
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login');
-
-  if (!userId && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (userId && isLoginPage) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  return NextResponse.next();
-}
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-}
+};

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logoutUser } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   let user = null;
   
   if (userId) {

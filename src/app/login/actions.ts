@@ -1,23 +1,24 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { signIn, signOut } from "@/auth"
+import { AuthError } from "next-auth"
 
-export async function loginUser(userId: string) {
-  const cookieStore = await cookies();
-  cookieStore.set('userId', userId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
-  
-  redirect('/');
+export async function authenticate(prevState: { error: string } | undefined, formData: FormData) {
+  try {
+    await signIn("credentials", Object.fromEntries(formData));
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return { error: "Invalid credentials." };
+        default:
+          return { error: "Something went wrong." };
+      }
+    }
+    throw error;
+  }
 }
 
 export async function logoutUser() {
-  const cookieStore = await cookies();
-  cookieStore.delete('userId');
-  redirect('/login');
+  await signOut();
 }

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { CreateGroupDialog } from "./create-group-dialog";
 
 export default async function Dashboard() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   
   if (!userId) redirect('/login');
 
@@ -25,8 +25,6 @@ export default async function Dashboard() {
   });
 
   if (!user) {
-    const store = await cookies();
-    store.delete('userId');
     redirect('/login');
   }
 

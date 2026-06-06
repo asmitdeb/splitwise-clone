@@ -33,7 +33,7 @@ Build a functional, deployed MVP of a bill-splitting app within a strict 16-hour
 
 ## 2. Core Workflows
 
-1. **Authentication (Mock Auth)**: Pure mock authentication. The `/login` page fetches a list of all seeded users from the DB and displays them in a dropdown. The user selects a profile, clicks login, and their `user_id` is stored in a plain cookie to manage session state.
+1. **Authentication**: Auth.js v5 (NextAuth): Used with Credentials provider (Email/Password) to provide real database-backed authentication. The user logs in with credentials, and their session is managed securely by Auth.js.
 2. **Group Management**: User creates a group and adds existing system users to it. Groups cannot be edited or deleted, and users cannot be removed.
 3. **Expense Creation**: A single form inside the group view. The user enters: Description, Total Amount, and selects the Payer (defaults to themselves). Below that, 4 tabs (Equal, Unequal, Percentage, Share). The submit button must remain disabled until the client-side form validation confirms the splits perfectly equal the Total Amount (or 100%). Any remaining cents (e.g., $0.01 from $10/3) are assigned to the payer.
 4. **Expense Chat**: Users leave messages in an expense-specific chat (implemented via short-polling). The chat UI must be scoped to individual expenses (tied to `expense_id`), not a general group chat. Users must click into a specific expense to see the polling chat for that specific bill.
@@ -99,13 +99,14 @@ This is the definitive relational schema to be used for the Prisma models:
 ## 6. Implementation Changes & Trade-offs (Post-Build Log)
 
 - **Next.js 15+ Async Params**: Due to breaking changes in Next.js 15+, dynamic route params (`[id]`, `[expenseId]`) are now strictly `Promise` objects. The application explicitly `await`s these params before querying the DB to prevent server crashes.
-- **Next.js 16 Proxy Re-architecture**: Next.js 16 deprecated `middleware.ts`. We migrated our mock auth logic to `src/proxy.ts` and renamed the export to `export default function proxy` to satisfy the strict Next build rules.
+- **Next.js 16 Proxy Re-architecture**: Next.js 16 deprecated `middleware.ts`. We use `src/proxy.ts` combined with `NextAuth` middleware to secure routes.
 - **Prisma Seed with DotEnv**: Standard Prisma seed scripts running through `tsx` don't automatically load Next.js environments. We injected `dotenv` into `seed.ts` to ensure the Neon Database connection string propagates correctly.
 - **Tailwind v4 CSS Variable Re-mapping**: Using Next.js's embedded `Geist` font required remapping `--font-sans: var(--font-geist-sans)` inside the Tailwind v4 `@theme inline` block in `globals.css` to properly overwrite default system fonts.
 - **Coupling**: Using Next.js Server Actions tightly couples frontend and backend, acceptable for an MVP but would require refactoring for a future mobile app.
 - **Real-time Simulation**: Short-polling for chat via `setInterval(..., 3000)` heavily increases database reads. Acceptable for MVP to avoid WebSocket deployment complexity.
 - **Monetary Precision**: Dumping remainder cents onto the payer handles rounding errors efficiently, though a true financial app would need precise ledger balancing.
 - **Vercel Postinstall Hook**: Vercel by default skips `prisma generate` if it isn't explicitly hooked. We added `"postinstall": "prisma generate"` to `package.json` to ensure the strict Prisma Client types are compiled before Vercel runs `next build`, preventing implicit `any` type cascading errors in the Edge environment.
+- **Auth.js Migration**: Migrated away from the mock cookie setup to Auth.js Credentials. Passwords are encrypted with `bcryptjs`. We also split `auth.ts` and `auth.config.ts` to ensure Edge Proxy compatibility.
 
 ## 7. Known Limitations
 - Modifying or reverting an expense is not implemented (requires complex cascaded updates).

@@ -1,11 +1,11 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
+import { auth } from "@/auth"
 
 export async function sendMessage(expenseId: string, content: string) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
 
   await prisma.message.create({

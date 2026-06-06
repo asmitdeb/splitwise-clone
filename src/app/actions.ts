@@ -1,13 +1,13 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
-import { cookies } from "next/headers"
+import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 export async function createGroup(formData: FormData) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('userId')?.value;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
 
   const name = formData.get('name') as string;
