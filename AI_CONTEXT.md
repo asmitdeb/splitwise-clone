@@ -20,7 +20,7 @@ Build a functional, deployed MVP of a bill-splitting app within a strict 16-hour
 - A group of friends splitting costs on a weekend trip.
 
 **Out-of-Scope:**
-- Real OAuth/SSO, JWT, or password hashing.
+- Real OAuth/SSO (Google/Facebook login).
 - Email/SMS invitations (Users selected from a pre-seeded DB list).
 - WebSockets for chat (Short-polling will be used to simulate real-time chat and save time).
 - Automated Testing (Jest/Cypress). Strictly manual testing.
@@ -77,7 +77,8 @@ This is the definitive relational schema to be used for the Prisma models:
 ### Frontend Architecture
 - **Framework/Libraries**: Next.js (App Router, v16+), Tailwind CSS (v4), and shadcn/ui.
 - **Routing Structure**:
-  - `/login`: Simple mock auth screen.
+  - `/login`: Secure login page utilizing NextAuth credentials. Includes 1-Click Demo Login options for reviewers.
+  - `/register`: User registration flow with bcrypt password hashing.
   - `/`: Dashboard displaying the list of the user's groups.
   - `/groups/[id]`: The core workspace. Contains UI sections/tabs for adding an expense, viewing the expense list, and viewing group balances.
   - `/groups/[id]/expenses/[expenseId]`: The dedicated expense detail page containing the polling-based chat.
@@ -85,7 +86,7 @@ This is the definitive relational schema to be used for the Prisma models:
 ### Backend Architecture & API Design
 - **Framework**: Next.js Server Actions directly within the App Router.
 - **API Design**: No REST or RPC boilerplate. Server Actions handle all Prisma database mutations natively from the server to maximize speed.
-- **Edge Proxy Auth**: We utilize Next.js 16's `src/proxy.ts` (replacing the deprecated `middleware.ts`) to intercept unauthenticated requests and check the plain cookie before loading dynamic routes.
+- **Edge Proxy Auth**: We utilize Next.js 16's `src/proxy.ts` (replacing the deprecated `middleware.ts`) alongside NextAuth's edge compatibility to intercept unauthenticated requests and protect dynamic routes.
 
 ### Database Choice
 - **Database**: PostgreSQL (Neon Serverless).
@@ -107,6 +108,7 @@ This is the definitive relational schema to be used for the Prisma models:
 - **Monetary Precision**: Dumping remainder cents onto the payer handles rounding errors efficiently, though a true financial app would need precise ledger balancing.
 - **Vercel Postinstall Hook**: Vercel by default skips `prisma generate` if it isn't explicitly hooked. We added `"postinstall": "prisma generate"` to `package.json` to ensure the strict Prisma Client types are compiled before Vercel runs `next build`, preventing implicit `any` type cascading errors in the Edge environment.
 - **Auth.js Migration**: Migrated away from the mock cookie setup to Auth.js Credentials. Passwords are encrypted with `bcryptjs`. We also split `auth.ts` and `auth.config.ts` to ensure Edge Proxy compatibility.
+- **Next.js 15 Server Action Redirect Quirk**: Calling `redirect()` inside a Next.js Server Action throws a hidden `NEXT_REDIRECT` error. If the Server Action is called from a Client Component that wraps it in a `try...catch` block, the redirect error is swallowed and causes an `An unexpected response was received from the server` crash. The workaround is to either use native API endpoints (like `next-auth/react`'s `signOut()`) or to return the new resource ID from the action and perform a client-side `useRouter().push()` navigation.
 
 ## 7. Known Limitations
 - Modifying or reverting an expense is not implemented (requires complex cascaded updates).

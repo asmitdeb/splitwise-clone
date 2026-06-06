@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -10,12 +11,16 @@ import { createGroup } from "./actions"
 export function CreateGroupDialog({ users }: { users: { id: string, name: string }[] }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   async function onSubmit(formData: FormData) {
     setLoading(true)
     try {
-      await createGroup(formData)
+      const res = await createGroup(formData)
       setOpen(false)
+      if (res?.groupId) {
+        router.push(`/groups/${res.groupId}`)
+      }
     } catch (e) {
       console.error(e)
     } finally {

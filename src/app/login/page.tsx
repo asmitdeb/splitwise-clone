@@ -50,13 +50,32 @@ export default function LoginPage() {
             <SubmitButton />
           </form>
         </CardContent>
-        <CardFooter className="justify-center">
-          <p className="text-sm text-gray-600">
+        <CardFooter className="flex flex-col space-y-4 pt-4 border-t">
+          <p className="text-sm text-gray-600 w-full text-center">
             Don't have an account?{' '}
             <Link href="/register" className="text-green-600 font-semibold hover:underline">
               Sign up
             </Link>
           </p>
+          <div className="w-full pt-4">
+            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3 text-center">1-Click Demo Login</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { name: "Alice", email: "alice@example.com" },
+                { name: "Bob", email: "bob@example.com" },
+                { name: "Charlie", email: "charlie@example.com" },
+                { name: "David", email: "david@example.com" }
+              ].map((demoUser) => (
+                <form action={dispatch} key={demoUser.email}>
+                  <input type="hidden" name="email" value={demoUser.email} />
+                  <input type="hidden" name="password" value="password123" />
+                  <Button variant="outline" size="sm" type="submit" className="w-full text-xs font-medium">
+                    Log in as {demoUser.name}
+                  </Button>
+                </form>
+              ))}
+            </div>
+          </div>
         </CardFooter>
       </Card>
     </div>

@@ -20,5 +20,5 @@ export async function authenticate(prevState: { error: string } | undefined, for
 }
 
 export async function logoutUser() {
-  await signOut();
+  await signOut({ redirectTo: "/login" });
 }

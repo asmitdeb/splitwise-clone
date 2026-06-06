@@ -18,7 +18,7 @@ The complexity of Splitwise isn't in the UI, but in the mathematical resolution 
 5. **Debt Resolution:** Viewing simplified net balances and recording manual cash payments to settle those balances.
 
 **What product assumptions I made:**
-- Real authentication is unnecessary for proving the MVP mechanics; mock authentication via cookies is sufficient.
+- Real authentication was ultimately implemented using Auth.js v5 (Credentials Provider) and bcryptjs to demonstrate full-stack robustness.
 - Users do not need to edit or delete expenses/groups for a v1 MVP.
 - A "greedy algorithm" resolving the highest debtor with the highest creditor is an acceptable and efficient way to simplify group debts without needing a complex graph-theory approach.
 
@@ -43,8 +43,8 @@ The complexity of Splitwise isn't in the UI, but in the mathematical resolution 
 - **Zero REST/GraphQL**: The application strictly utilizes Next.js Server Actions. Client components pass form data directly to server-side functions which interact with Prisma and subsequently trigger `revalidatePath` to update the UI instantly without manual state management.
 
 **Frontend Structure:**
-- `/login`: Mock auth dropdown. Sets a session cookie.
-- `src/proxy.ts`: Next.js 16 Edge proxy (replacing middleware) that intercepts unauthenticated requests.
+- `/login`: Secure login page utilizing NextAuth credentials. Includes 1-Click Demo Login options for reviewers.
+- `src/proxy.ts`: Next.js 16 Edge proxy that utilizes NextAuth configuration to intercept unauthenticated requests and secure dynamic routes.
 - `/`: Dashboard showing the user's groups.
 - `/groups/[id]`: Group workspace with Shadcn Tabs for "Expenses" and "Balances".
 - `/groups/[id]/expenses/[expenseId]`: Dedicated expense view featuring the auto-polling chat interface.
@@ -68,7 +68,7 @@ The AI probed deeply into scope:
 
 **How I answered:**
 I mandated extreme scope-cutting to ensure the 16-hour deadline could be met:
-- Mock auth only.
+- Robust authentication utilizing Auth.js.
 - Rounding errors dump the remaining cents onto the payer.
 - Chat must be scoped specifically to the expense.
 - Users cannot be removed from groups (avoiding complex cascading debt logic).
@@ -87,14 +87,16 @@ Initially, the plan missed the explicit requirement that chat was scoped to *exp
 - **Group Mutability:** Groups and expenses cannot be edited or deleted.
 
 **What I hardcoded:**
-- **Users:** The database is pre-seeded with 5 specific mock users ("Alice Roommate", etc.). No signup flow exists.
+- **Users:** The database is pre-seeded with 5 specific mock users ("Alice Roommate", etc.), equipped with default hashed passwords to test the Auth flow. A sign-up flow is also available.
 
 **What I avoided:**
 - **Complex Financial Ledgers:** Instead of an immutable double-entry accounting ledger, the app dynamically calculates net balances on-the-fly by querying all expenses and settlements in real-time.
 - **Push Notifications & Emails:** Completely omitted.
 
 **What I would improve with more time:**
-1. Implement real JWT-based authentication via NextAuth/Auth.js.
-2. Add a comprehensive activity feed showing an audit log of who added what expense.
-3. Migrate the chat from short-polling to Pusher or Supabase Realtime to save database read costs.
-4. Allow editing/deleting expenses with robust logic to reverse the associated `ExpenseParticipants` and recalculate debts gracefully.
+1. Add a comprehensive activity feed showing an audit log of who added what expense.
+2. Migrate the chat from short-polling to Pusher or Supabase Realtime to save database read costs.
+3. Allow editing/deleting expenses with robust logic to reverse the associated `ExpenseParticipants` and recalculate debts gracefully.
+
+## 5. Technical Challenges Conquered
+- **The Next.js 15 Server Action Redirect Bug**: A critical challenge emerged when trying to redirect users after logging out or creating a group. Because Next.js `redirect()` works by throwing a hidden error, wrapping Server Actions in `try...catch` blocks within Client Components swallowed the redirect, causing an "unexpected response from server" crash. This was resolved by using `next-auth/react` for client-side Auth operations, and returning database IDs from Server Actions to let the `useRouter` perform safe client-side transitions.

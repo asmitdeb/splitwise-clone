@@ -3,8 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { logoutUser } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/logout-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,9 +45,7 @@ export default async function RootLayout({
                 <span className="text-sm font-medium text-gray-600 hidden sm:inline-block">
                   Logged in as <span className="font-bold text-gray-900">{user.name}</span>
                 </span>
-                <form action={logoutUser}>
-                  <Button variant="outline" size="sm" type="submit" className="font-semibold">Log Out</Button>
-                </form>
+                <LogoutButton />
               </div>
             </div>
           </header>

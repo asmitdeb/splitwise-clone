@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+
 
 export async function createGroup(formData: FormData) {
   const session = await auth();
@@ -26,5 +26,5 @@ export async function createGroup(formData: FormData) {
   });
 
   revalidatePath('/');
-  redirect(`/groups/${group.id}`);
+  return { groupId: group.id };
 }
