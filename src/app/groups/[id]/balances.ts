@@ -21,7 +21,7 @@ export async function calculateBalances(groupId: string): Promise<Debt[]> {
   const balances: Record<string, number> = {};
   const users: Record<string, { id: string, name: string }> = {};
 
-  group.members.forEach(m => {
+  group.members.forEach((m : any) => {
     balances[m.user.id] = 0;
     users[m.user.id] = m.user;
   });
