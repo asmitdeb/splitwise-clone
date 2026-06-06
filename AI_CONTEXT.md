@@ -105,6 +105,7 @@ This is the definitive relational schema to be used for the Prisma models:
 - **Coupling**: Using Next.js Server Actions tightly couples frontend and backend, acceptable for an MVP but would require refactoring for a future mobile app.
 - **Real-time Simulation**: Short-polling for chat via `setInterval(..., 3000)` heavily increases database reads. Acceptable for MVP to avoid WebSocket deployment complexity.
 - **Monetary Precision**: Dumping remainder cents onto the payer handles rounding errors efficiently, though a true financial app would need precise ledger balancing.
+- **Vercel Postinstall Hook**: Vercel by default skips `prisma generate` if it isn't explicitly hooked. We added `"postinstall": "prisma generate"` to `package.json` to ensure the strict Prisma Client types are compiled before Vercel runs `next build`, preventing implicit `any` type cascading errors in the Edge environment.
 
 ## 7. Known Limitations
 - Modifying or reverting an expense is not implemented (requires complex cascaded updates).

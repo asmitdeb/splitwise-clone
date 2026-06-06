@@ -51,6 +51,7 @@ The complexity of Splitwise isn't in the UI, but in the mathematical resolution 
 
 **Deployment Approach:**
 - Built to be deployed instantly on **Vercel**. Since the app uses Server Actions and a Neon serverless PostgreSQL driver, it requires zero custom Docker/Node server configuration.
+- We explicitly added a `"postinstall": "prisma generate"` hook in `package.json`. This forces Vercel's CI to generate the strict Prisma v7 types before executing `next build`, bypassing build-time `any` type inference errors.
 
 ## 3. AI Collaboration Process
 
