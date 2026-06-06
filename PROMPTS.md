@@ -50,4 +50,31 @@ This document serves as a record of the key prompts, instructions, and architect
 **Prompt:**
 > update README.md with setup instructions and the AI used
 
+## 7. Authentication Migration
 
+**Prompt:**
+> Let us complete the login module, move away from mock login, and implement login/signup using auth.js
+
+**Prompt:**
+> I have added the auth flow on a new branch. This branch currently has the previous code without the auth.js, only mock auth. Why is npx prisma db push not working?
+
+**Prompt:**
+> let us merge that branch in main then, and do the necessary changes to the db. the branch is called auth-setup
+
+**Prompt:**
+> Give the option to login with a single click to any of the seed accounts. that way someone reviewing the website doesn't need to create an account
+
+## 8. Server Action & Framework Debugging
+
+**Prompt:**
+> Uncaught Error: An unexpected response was received from the server.
+> at form (<anonymous>)
+> at RootLayout (src/app/layout.tsx:48:17)
+> Error on clicking logout
+
+**Prompt:**
+> [auth][error] MissingCSRF: CSRF token was missing during an action signout. Read more at https://errors.authjs.dev#missingcsrf
+> POST /api/auth/signout 302 in 16ms
+
+**Prompt:**
+> is the seed.ts file correct for anyone who wishes to start from scratch?

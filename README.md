@@ -40,11 +40,19 @@ npm install
 
 ### 3. Environment Variables
 
-Create a `.env` file in the root directory and add your Neon Database connection string:
+Copy the `.env.example` file to create your own `.env` file, and fill in the required variables:
 
+```bash
+cp .env.example .env
+```
+
+Your `.env` should look like this:
 ```env
 # Example Neon Connection String
 DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
+
+# Auth.js Secret (Generate one using `npx auth secret`)
+AUTH_SECRET="your-generated-auth-secret-here"
 ```
 
 ### 4. Database Setup
@@ -73,7 +81,7 @@ Start the Next.js development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. You will be greeted with a mock authentication screen to select a user context.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. You will be greeted with a secure login screen where you can sign up for a new account or utilize the 1-Click Demo Login to instantly explore the app as a pre-seeded user.
 
 ## Documentation
 
