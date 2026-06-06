@@ -1,20 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
-
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL is missing. Add it to .env or export it before running the seed script."
-  );
-}
-
-const adapter = new PrismaNeon({
-  connectionString,
-});
-
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "../src/lib/prisma";
 
 async function main() {
   console.log("Start seeding ...");

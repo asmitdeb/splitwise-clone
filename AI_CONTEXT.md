@@ -75,26 +75,38 @@ This is the definitive relational schema to be used for the Prisma models:
 ## 5. Tech Stack, Architecture, and Deployment
 
 ### Frontend Architecture
-- **Framework/Libraries**: Next.js (App Router), Tailwind CSS, and shadcn/ui.
+- **Framework/Libraries**: Next.js (App Router, v16+), Tailwind CSS (v4), and shadcn/ui.
 - **Routing Structure**:
   - `/login`: Simple mock auth screen.
   - `/`: Dashboard displaying the list of the user's groups.
-  - `/groups/[id]`: The core workspace. Contains UI sections/tabs for adding an expense, viewing the expense list, viewing group balances, and the polling-based chat.
+  - `/groups/[id]`: The core workspace. Contains UI sections/tabs for adding an expense, viewing the expense list, and viewing group balances.
+  - `/groups/[id]/expenses/[expenseId]`: The dedicated expense detail page containing the polling-based chat.
 
 ### Backend Architecture & API Design
 - **Framework**: Next.js Server Actions directly within the App Router.
 - **API Design**: No REST or RPC boilerplate. Server Actions handle all Prisma database mutations natively from the server to maximize speed.
+- **Edge Proxy Auth**: We utilize Next.js 16's `src/proxy.ts` (replacing the deprecated `middleware.ts`) to intercept unauthenticated requests and check the plain cookie before loading dynamic routes.
 
 ### Database Choice
-- **Database**: PostgreSQL.
-- **Hosting**: Managed cloud service (Neon or Supabase) from the start.
-- **ORM**: Prisma.
+- **Database**: PostgreSQL (Neon Serverless).
+- **Hosting**: Managed cloud service (Neon serverless pooler).
+- **ORM**: Prisma (using `@prisma/adapter-neon` via HTTP/WebSockets since Neon serverless demands it).
 
 ### Deployment & Testing
 - **Deployment**: Vercel.
-- **Testing**: Strictly manual testing (automated tests out of scope).
+- **Testing**: Strictly manual testing (automated tests out of scope). Build verified with Turbopack.
 
-### Known Risks & Tradeoffs
+## 6. Implementation Changes & Trade-offs (Post-Build Log)
+
+- **Next.js 15+ Async Params**: Due to breaking changes in Next.js 15+, dynamic route params (`[id]`, `[expenseId]`) are now strictly `Promise` objects. The application explicitly `await`s these params before querying the DB to prevent server crashes.
+- **Next.js 16 Proxy Re-architecture**: Next.js 16 deprecated `middleware.ts`. We migrated our mock auth logic to `src/proxy.ts` and renamed the export to `export default function proxy` to satisfy the strict Next build rules.
+- **Prisma Seed with DotEnv**: Standard Prisma seed scripts running through `tsx` don't automatically load Next.js environments. We injected `dotenv` into `seed.ts` to ensure the Neon Database connection string propagates correctly.
+- **Tailwind v4 CSS Variable Re-mapping**: Using Next.js's embedded `Geist` font required remapping `--font-sans: var(--font-geist-sans)` inside the Tailwind v4 `@theme inline` block in `globals.css` to properly overwrite default system fonts.
 - **Coupling**: Using Next.js Server Actions tightly couples frontend and backend, acceptable for an MVP but would require refactoring for a future mobile app.
-- **Real-time Simulation**: Short-polling for chat heavily increases database reads. Acceptable for MVP to avoid WebSocket deployment complexity.
+- **Real-time Simulation**: Short-polling for chat via `setInterval(..., 3000)` heavily increases database reads. Acceptable for MVP to avoid WebSocket deployment complexity.
 - **Monetary Precision**: Dumping remainder cents onto the payer handles rounding errors efficiently, though a true financial app would need precise ledger balancing.
+
+## 7. Known Limitations
+- Modifying or reverting an expense is not implemented (requires complex cascaded updates).
+- Real-time events do not trigger push notifications.
+- The greedy algorithm handles the vast majority of balance loops but operates locally on the current DB snapshot state rather than an immutable historical ledger.

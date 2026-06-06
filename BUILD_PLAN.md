@@ -1,70 +1,99 @@
-# Splitwise Clone MVP Implementation Plan
+# Splitwise Clone MVP: Build Plan and Retrospective
 
-This plan details the step-by-step approach to building the 3-day MVP of the Splitwise clone based strictly on the agreed `AI_CONTEXT.md`.
+This document summarizes the research, architecture, collaboration process, and tradeoffs made during the creation of the Splitwise Clone MVP, fulfilling the final assignment requirements.
 
-## User Review Required
+## 1. Product Research
 
-> [!IMPORTANT]
-> Please review this build plan to ensure it perfectly aligns with our 16-hour MVP scope before we write any code.
-> Let me know if you approve this plan to begin execution!
+**How I studied Splitwise:**
+I analyzed the core user journeys of the existing Splitwise application, specifically focusing on the most critical paths: logging in, creating groups of friends, adding expenses, and settling debts. I stripped away all premium features (like receipt scanning and currency conversion) to identify the absolute minimum viable feature set.
 
-## Proposed Steps
+**What I learned:**
+The complexity of Splitwise isn't in the UI, but in the mathematical resolution of debts. The core value proposition is preventing money arguments by ensuring exact mathematical splits (handling rounding) and simplifying overlapping peer-to-peer debts into minimal cash transactions.
 
-### Step 1: Project Initialization & Dependencies
-- Bootstrap Next.js application using App Router (`npx create-next-app@latest`).
-- Install Tailwind CSS and Shadcn UI.
-- Install Prisma and initialize it (`npx prisma init`).
-- Configure environment variables for the PostgreSQL database (Neon/Supabase).
+**What workflows I identified:**
+1. **Authentication:** Identifying who the current user is.
+2. **Group Management:** Creating isolated workspaces (groups) for specific sets of users (e.g., "Weekend Trip").
+3. **Expense Creation:** Recording a bill paid by one person, split across multiple people using different methodologies (Equal, Unequal, Percentages, Shares).
+4. **Expense Chat:** Discussing specific bills.
+5. **Debt Resolution:** Viewing simplified net balances and recording manual cash payments to settle those balances.
 
-### Step 2: Database Setup & Seeding
-- Define the Prisma schema strictly adhering to the `AI_CONTEXT.md` Data Model.
-- Create initial migrations.
-- Write a database seed script to populate mock users so the Mock Authentication flow will work correctly.
+**What product assumptions I made:**
+- Real authentication is unnecessary for proving the MVP mechanics; mock authentication via cookies is sufficient.
+- Users do not need to edit or delete expenses/groups for a v1 MVP.
+- A "greedy algorithm" resolving the highest debtor with the highest creditor is an acceptable and efficient way to simplify group debts without needing a complex graph-theory approach.
 
-### Step 3: Mock Authentication & Layouts
-- Implement the `/login` route fetching users from DB to populate a dropdown.
-- Store the selected `user_id` in a plain cookie.
-- Create middleware or a wrapper to enforce the mock session cookie across protected routes.
-- Build the core application shell (navigation, user session indicator).
+## 2. Architecture
 
-### Step 4: Dashboard & Group Management (Groups)
-- Implement Server Actions for creating groups and adding members.
-- Build the `/` Dashboard to display user's groups.
-- Build a modal/form for creating a group and selecting seeded users to add to the group.
+**Tech Stack:**
+- Next.js (App Router, v15/v16+) for both frontend UI and backend API logic.
+- Tailwind CSS (v4) and shadcn/ui for rapid, aesthetic component development.
+- Prisma ORM (`@prisma/client` and `@prisma/adapter-neon`).
+- PostgreSQL hosted on Neon (Serverless).
 
-### Step 5: Group Workspace & Expense Creation
-- Build the `/groups/[id]` route structure with tabs/sections.
-- Implement the "Add Expense" form UI containing description, amount, payer, and the 4 split type tabs (Equal, Unequal, Percentage, Share).
-- Add strict client-side validation logic for the splits.
-- Implement the backend Server Action to create the `Expense` and calculate/insert exact amounts into `ExpenseParticipant`.
+**Database Schema:**
+- `User`: Core identity (`id`, `name`, `email`).
+- `Group`: Isolated containers for expenses.
+- `GroupMember`: Join table linking Users to Groups.
+- `Expense`: A recorded bill (`total_amount`, `payer_id`, `split_type`).
+- `ExpenseParticipant`: The exact calculated dollar amount owed by each person for a specific expense.
+- `Message`: Chat messages tied directly to an `expense_id`.
+- `Settlement`: Records of cash payments between users to resolve debts.
 
-### Step 6: Expense List & Debt Settlements
-- Display the list of expenses within the group.
-- Implement the "Add Settlement" flow to record cash payments between users.
-- Implement Server Action to save `Settlement` records.
+**API Design:**
+- **Zero REST/GraphQL**: The application strictly utilizes Next.js Server Actions. Client components pass form data directly to server-side functions which interact with Prisma and subsequently trigger `revalidatePath` to update the UI instantly without manual state management.
 
-### Step 7: Balance Calculation Algorithm
-- Implement the backend logic to calculate net balances (paid minus owed).
-- Write the greedy algorithm to simplify debts and determine who owes whom.
-- Display the simplified balances and net debts in the `/groups/[id]` view.
+**Frontend Structure:**
+- `/login`: Mock auth dropdown. Sets a session cookie.
+- `src/proxy.ts`: Next.js 16 Edge proxy (replacing middleware) that intercepts unauthenticated requests.
+- `/`: Dashboard showing the user's groups.
+- `/groups/[id]`: Group workspace with Shadcn Tabs for "Expenses" and "Balances".
+- `/groups/[id]/expenses/[expenseId]`: Dedicated expense view featuring the auto-polling chat interface.
 
-### Step 8: Expense Chat (Short-polling)
-- Implement the chat UI scoped to individual expenses. Users will click into a specific expense from the list to see this chat.
-- Implement Server Action to save new chat messages.
-- Add client-side logic to short-poll the server for new messages on a set interval.
+**Deployment Approach:**
+- Built to be deployed instantly on **Vercel**. Since the app uses Server Actions and a Neon serverless PostgreSQL driver, it requires zero custom Docker/Node server configuration.
 
-### Step 9: Vercel Deployment & Polish
-- Deploy the project to Vercel.
-- Verify environment variables on Vercel.
-- Do a final manual testing sweep of all workflows.
+## 3. AI Collaboration Process
 
-## Verification Plan
+**How I instructed the AI:**
+The AI was instructed to act as a junior engineer pair-programming to complete an internship assignment within a strict 16-hour timeframe constraint. It was explicitly told *not* to jump to code, but to deeply question product requirements and edge cases first.
 
-### Manual Verification
-- We will run the dev server and manually verify:
-  - Mock Auth via Cookie
-  - Group creation and participant adding
-  - Expense creation validation rules and backend calculation logic
-  - Correct rendering of simplified balances
-  - Real-time simulated chat through multiple browser windows (polling)
-- Deploy to Vercel and run the same tests in the production environment.
+**What questions the AI asked:**
+The AI probed deeply into scope:
+- Should authentication be real (Auth0) or mocked?
+- How should rounding errors be handled when dividing $10 by 3?
+- Should chat be global to the group or scoped to an expense?
+- What happens if a user is removed from a group with active debts?
+- Are we deploying to a persistent cloud DB or using SQLite locally?
+
+**How I answered:**
+I mandated extreme scope-cutting to ensure the 16-hour deadline could be met:
+- Mock auth only.
+- Rounding errors dump the remaining cents onto the payer.
+- Chat must be scoped specifically to the expense.
+- Users cannot be removed from groups (avoiding complex cascading debt logic).
+- We must use Neon Postgres from minute one to avoid SQLite-to-Postgres migration headaches later.
+
+**How the plan evolved:**
+Initially, the plan missed the explicit requirement that chat was scoped to *expenses*, not groups. I corrected the AI on this, and the plan was updated to include the `/groups/[id]/expenses/[expenseId]` route. Later, we migrated the deployment target to Next.js 16 standards (updating `middleware` to `proxy` and `await`ing route params).
+
+**How AI_CONTEXT.md was maintained:**
+`AI_CONTEXT.md` was established as the ultimate Source of Truth. After every architectural decision (e.g., using Neon adapter, switching to Next.js 16 proxy, designing the greedy algorithm), the AI was instructed to completely rewrite the context file to ensure an external evaluator could paste it into a blank IDE and reproduce the exact same app.
+
+## 4. Tradeoffs
+
+**What I simplified:**
+- **WebSockets:** Real-time chat was simplified to use `setInterval` short-polling (every 3 seconds) instead of a dedicated WebSocket server. This drastically simplified deployment while maintaining MVP UX.
+- **Group Mutability:** Groups and expenses cannot be edited or deleted.
+
+**What I hardcoded:**
+- **Users:** The database is pre-seeded with 5 specific mock users ("Alice Roommate", etc.). No signup flow exists.
+
+**What I avoided:**
+- **Complex Financial Ledgers:** Instead of an immutable double-entry accounting ledger, the app dynamically calculates net balances on-the-fly by querying all expenses and settlements in real-time.
+- **Push Notifications & Emails:** Completely omitted.
+
+**What I would improve with more time:**
+1. Implement real JWT-based authentication via NextAuth/Auth.js.
+2. Add a comprehensive activity feed showing an audit log of who added what expense.
+3. Migrate the chat from short-polling to Pusher or Supabase Realtime to save database read costs.
+4. Allow editing/deleting expenses with robust logic to reverse the associated `ExpenseParticipants` and recalculate debts gracefully.
