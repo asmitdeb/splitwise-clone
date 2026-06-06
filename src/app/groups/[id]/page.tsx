@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AddExpenseForm } from "./add-expense-form"
 import { calculateBalances } from "./balances"
 import { SettleUpForm } from "./settle-up-form"
+import { ManageMembersDialog } from "./manage-members-dialog"
 import Link from "next/link"
 
 // Prevent Next.js from trying to statically generate this dynamic route which uses cookies()
@@ -25,6 +26,10 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
       expenses: {
         include: { payer: true, participants: true },
         orderBy: { createdAt: 'desc' }
+      },
+      settlements: {
+        include: { payer: true, payee: true },
+        orderBy: { createdAt: 'desc' }
       }
     }
   });
@@ -33,12 +38,16 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
 
   const members = group.members.map(m => m.user);
   const debts = await calculateBalances(group.id);
+  const allUsers = await prisma.user.findMany({ select: { id: true, name: true, email: true } });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Link href="/" className="text-gray-500 hover:text-gray-900 bg-gray-100 px-3 py-1 rounded-md text-sm transition-colors">&larr; Back to Dashboard</Link>
-        <h1 className="text-3xl font-extrabold tracking-tight">{group.name}</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link href="/" className="text-gray-500 hover:text-gray-900 bg-gray-100 px-3 py-1 rounded-md text-sm transition-colors">&larr; Back to Dashboard</Link>
+          <h1 className="text-3xl font-extrabold tracking-tight">{group.name}</h1>
+        </div>
+        <ManageMembersDialog groupId={group.id} currentMembers={members} allUsers={allUsers} />
       </div>
 
       <Tabs defaultValue="expenses" className="w-full">
@@ -110,6 +119,31 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
               ))}
             </div>
           )}
+
+          <section className="pt-8 mt-8 border-t">
+            <h2 className="text-2xl font-bold mb-4">Recent Payments</h2>
+            <div className="space-y-4">
+              {group.settlements.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 border border-dashed rounded-xl bg-gray-50">
+                  No payments have been made yet.
+                </div>
+              ) : (
+                group.settlements.map(settlement => (
+                  <div key={settlement.id} className="flex items-center justify-between p-5 bg-white rounded-xl border shadow-sm border-l-4 border-l-blue-500">
+                    <div>
+                      <p className="text-lg text-gray-700">
+                        <span className="font-bold text-gray-900">{settlement.payer.name}</span> paid <span className="font-bold text-gray-900">{settlement.payee.name}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-black text-xl text-blue-600">${settlement.amount.toFixed(2)}</div>
+                      <div className="text-xs text-gray-400 mt-1">{new Date(settlement.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
         </TabsContent>
       </Tabs>
     </div>

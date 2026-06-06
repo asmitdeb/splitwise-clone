@@ -19,7 +19,8 @@ The complexity of Splitwise isn't in the UI, but in the mathematical resolution 
 
 **What product assumptions I made:**
 - Real authentication was ultimately implemented using Auth.js v5 (Credentials Provider) and bcryptjs to demonstrate full-stack robustness.
-- Users do not need to edit or delete expenses/groups for a v1 MVP.
+- Users do not need to edit or delete expenses for a v1 MVP.
+- Users can be removed from groups, but we enforce strict data integrity: they can only be removed if they have zero expense or settlement history.
 - A "greedy algorithm" resolving the highest debtor with the highest creditor is an acceptable and efficient way to simplify group debts without needing a complex graph-theory approach.
 
 ## 2. Architecture
@@ -45,7 +46,7 @@ The complexity of Splitwise isn't in the UI, but in the mathematical resolution 
 **Frontend Structure:**
 - `/login`: Secure login page utilizing NextAuth credentials. Includes 1-Click Demo Login options for reviewers.
 - `src/proxy.ts`: Next.js 16 Edge proxy that utilizes NextAuth configuration to intercept unauthenticated requests and secure dynamic routes.
-- `/`: Dashboard showing the user's groups.
+- `/`: Dashboard featuring an "Individual Balance Summary" widget (calculating global net debts on the fly) and the user's group list.
 - `/groups/[id]`: Group workspace with Shadcn Tabs for "Expenses" and "Balances".
 - `/groups/[id]/expenses/[expenseId]`: Dedicated expense view featuring the auto-polling chat interface.
 
@@ -84,7 +85,7 @@ Initially, the plan missed the explicit requirement that chat was scoped to *exp
 
 **What I simplified:**
 - **WebSockets:** Real-time chat was simplified to use `setInterval` short-polling (every 3 seconds) instead of a dedicated WebSocket server. This drastically simplified deployment while maintaining MVP UX.
-- **Group Mutability:** Groups and expenses cannot be edited or deleted.
+- **Group Mutability:** Groups and expenses cannot be edited or deleted, but members can be safely added and removed.
 
 **What I hardcoded:**
 - **Users:** The database is pre-seeded with 5 specific mock users ("Alice Roommate", etc.), equipped with default hashed passwords to test the Auth flow. A sign-up flow is also available.
@@ -99,4 +100,5 @@ Initially, the plan missed the explicit requirement that chat was scoped to *exp
 3. Allow editing/deleting expenses with robust logic to reverse the associated `ExpenseParticipants` and recalculate debts gracefully.
 
 ## 5. Technical Challenges Conquered
+- **Global Net Balance Calculation**: To provide an Individual Balance Summary across all groups on the dashboard without maintaining a complex, persistent, double-entry ledger, we query all nested `Expenses` and `Settlements` across all of a user's groups in a single Prisma pass. We then map the exact logic used in our greedy algorithm locally on the server to dynamically spit out a highly accurate, real-time total net debt widget.
 - **The Next.js 15 Server Action Redirect Bug**: A critical challenge emerged when trying to redirect users after logging out or creating a group. Because Next.js `redirect()` works by throwing a hidden error, wrapping Server Actions in `try...catch` blocks within Client Components swallowed the redirect, causing an "unexpected response from server" crash. This was resolved by using `next-auth/react` for client-side Auth operations, and returning database IDs from Server Actions to let the `useRouter` perform safe client-side transitions.

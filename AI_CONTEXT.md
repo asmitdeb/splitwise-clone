@@ -34,10 +34,10 @@ Build a functional, deployed MVP of a bill-splitting app within a strict 16-hour
 ## 2. Core Workflows
 
 1. **Authentication**: Auth.js v5 (NextAuth): Used with Credentials provider (Email/Password) to provide real database-backed authentication. The user logs in with credentials, and their session is managed securely by Auth.js.
-2. **Group Management**: User creates a group and adds existing system users to it. Groups cannot be edited or deleted, and users cannot be removed.
+2. **Group Management**: User creates a group and adds existing system users to it. After creation, users can be added to the group via the "Manage Members" dialog. Users can also be removed, but strictly governed by a **Data Integrity Rule**: a user cannot be removed if they are involved in any expenses or settlements within that group.
 3. **Expense Creation**: A single form inside the group view. The user enters: Description, Total Amount, and selects the Payer (defaults to themselves). Below that, 4 tabs (Equal, Unequal, Percentage, Share). The submit button must remain disabled until the client-side form validation confirms the splits perfectly equal the Total Amount (or 100%). Any remaining cents (e.g., $0.01 from $10/3) are assigned to the payer.
 4. **Expense Chat**: Users leave messages in an expense-specific chat (implemented via short-polling). The chat UI must be scoped to individual expenses (tied to `expense_id`), not a general group chat. Users must click into a specific expense to see the polling chat for that specific bill.
-5. **Balance View**: Users view a summary of group balances and their individual net debts, simplified using a greedy algorithm.
+5. **Balance View**: Users view a summary of group balances and their individual net debts, simplified using a greedy algorithm. Furthermore, an **Individual Balance Summary** is displayed on the main dashboard, tallying the user's global net standing across all their groups.
 6. **Debt Settlement**: User records a cash payment to settle a specific debt balance (partial payments allowed).
 
 ## 3. Detailed Logic & Rules
@@ -45,7 +45,7 @@ Build a functional, deployed MVP of a bill-splitting app within a strict 16-hour
 ### Groups
 - **Data Points**: `id`, `name`, `created_at` (No avatars or descriptions).
 - **Permissions**: No explicit owner. Any member can add an expense.
-- **Scope Limitations**: Cannot be edited or deleted. Users can only be added, not removed.
+- **Scope Limitations**: Groups cannot be edited or deleted. Users can be added, and can only be removed if they have $0.00 history in the group.
 
 ### Expenses
 - **Rounding Errors**: Any remaining cents are automatically assigned to the person who paid the bill.
@@ -79,7 +79,7 @@ This is the definitive relational schema to be used for the Prisma models:
 - **Routing Structure**:
   - `/login`: Secure login page utilizing NextAuth credentials. Includes 1-Click Demo Login options for reviewers.
   - `/register`: User registration flow with bcrypt password hashing.
-  - `/`: Dashboard displaying the list of the user's groups.
+  - `/`: Dashboard displaying the user's Total Global Balance widget and a grid of their groups (each annotated with a group-specific balance).
   - `/groups/[id]`: The core workspace. Contains UI sections/tabs for adding an expense, viewing the expense list, and viewing group balances.
   - `/groups/[id]/expenses/[expenseId]`: The dedicated expense detail page containing the polling-based chat.
 
