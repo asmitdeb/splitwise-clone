@@ -8,13 +8,19 @@ export async function sendMessage(expenseId: string, content: string) {
   const userId = session?.user?.id;
   if (!userId) throw new Error("Unauthorized");
 
-  await prisma.message.create({
+  const msg = await prisma.message.create({
     data: {
       expenseId,
       userId,
       content
-    }
+    },
+    include: { user: { select: { id: true, name: true } } }
   });
+
+  return {
+    ...msg,
+    createdAt: msg.createdAt.toISOString()
+  };
 }
 
 export async function getMessages(expenseId: string, afterDateStr?: string) {

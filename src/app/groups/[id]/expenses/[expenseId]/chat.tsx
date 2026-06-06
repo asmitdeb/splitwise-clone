@@ -26,20 +26,27 @@ export function ExpenseChat({ expenseId, currentUserId, initialMessages }: { exp
     scrollToBottom()
   }, [messages])
 
+  const lastMsgDateRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      lastMsgDateRef.current = messages[messages.length - 1].createdAt;
+    }
+  }, [messages]);
+
   useEffect(() => {
     const interval = setInterval(async () => {
-      const lastMsg = messages[messages.length - 1];
-      const newMessages = await getMessages(expenseId, lastMsg?.createdAt);
+      const newMessages = await getMessages(expenseId, lastMsgDateRef.current);
       if (newMessages.length > 0) {
         setMessages(prev => {
           const newIds = new Set(newMessages.map(m => m.id));
           return [...prev.filter(m => !newIds.has(m.id)), ...newMessages];
         });
       }
-    }, 10000); // 10-second polling to reduce Next.js dev server overhead
+    }, 5000); // 5-second polling
 
     return () => clearInterval(interval);
-  }, [expenseId, messages]);
+  }, [expenseId]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -48,20 +55,14 @@ export function ExpenseChat({ expenseId, currentUserId, initialMessages }: { exp
     setLoading(true);
     const text = input;
     setInput("");
-    
-    const tempId = Math.random().toString();
-    setMessages(prev => [...prev, {
-      id: tempId,
-      content: text,
-      createdAt: new Date().toISOString(),
-      user: { id: currentUserId, name: 'You' }
-    }]);
-
     try {
-      await sendMessage(expenseId, text);
+      const realMsg = await sendMessage(expenseId, text);
+      setMessages(prev => {
+        if (prev.some(m => m.id === realMsg.id)) return prev;
+        return [...prev, realMsg];
+      });
     } catch (e) {
       console.error(e);
-      setMessages(prev => prev.filter(m => m.id !== tempId)); // revert on error
     } finally {
       setLoading(false);
     }
