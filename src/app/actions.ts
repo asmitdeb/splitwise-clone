@@ -1,0 +1,30 @@
+'use server'
+
+import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
+import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+
+export async function createGroup(formData: FormData) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get('userId')?.value;
+  if (!userId) throw new Error("Unauthorized");
+
+  const name = formData.get('name') as string;
+  const participantIds = formData.getAll('participantIds') as string[];
+
+  // Ensure current user is in the group
+  const members = new Set([userId, ...participantIds]);
+
+  const group = await prisma.group.create({
+    data: {
+      name,
+      members: {
+        create: Array.from(members).map(id => ({ userId: id }))
+      }
+    }
+  });
+
+  revalidatePath('/');
+  redirect(`/groups/${group.id}`);
+}
